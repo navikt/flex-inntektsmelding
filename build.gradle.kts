@@ -162,7 +162,7 @@ tasks {
     }
 
     withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "14"
+        kotlinOptions.jvmTarget = "12"
     }
 
     withType<JacocoReport> {
