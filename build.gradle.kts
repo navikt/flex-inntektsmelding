@@ -27,6 +27,7 @@ val postgresVersion = "42.2.15"
 val flywayVersion = "6.5.4"
 val hikariVersion = "3.4.5"
 val brukernotifikasjonAvroVersion = "1.2020.08.13-13.50-3b6ca1881161"
+val inntektsmeldingKontraktVersion = "2020.04.06-12-19-94de1"
 
 val ktlint by configurations.creating
 
@@ -107,6 +108,8 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
+
+    implementation("no.nav.sykepenger.kontrakter:inntektsmelding-kontrakt:$inntektsmeldingKontraktVersion")
 
     testImplementation("org.amshove.kluent:kluent:$kluentVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
