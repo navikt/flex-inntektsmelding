@@ -1,7 +1,7 @@
 apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
-  name: flexinntektsmelding
+  name: flex-inntektsmelding
   namespace: flex
   labels:
     team: flex
@@ -33,6 +33,9 @@ spec:
     requests:
       cpu: 400m
       memory: 768Mi
-
-  envFrom:
-    - secret: flexinntektsmelding-serviceuser
+  gcp:
+    sqlInstances:
+      - type: POSTGRES_11
+        databases:
+          - name: inntektsmeldingdb
+            diskAutoresize: true
