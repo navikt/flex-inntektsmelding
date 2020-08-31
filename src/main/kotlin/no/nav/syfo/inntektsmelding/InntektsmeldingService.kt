@@ -13,7 +13,7 @@ class InntektsmeldingService(
     fun start() {
         log.info("InntektsmeldingService started")
 
-        while(applicationState.ready) {
+        while (applicationState.ready) {
             val consumerRecords = inntektsmeldingConsumer.poll()
             consumerRecords?.forEach {
                 log.info("Inntektsmelding record", it)

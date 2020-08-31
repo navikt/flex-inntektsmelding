@@ -28,7 +28,6 @@ fun main() {
     val kafkaClients = KafkaClients(env)
     DefaultExports.initialize()
 
-
     val inntektsmeldingConsumer = InntektsmeldingConsumer(kafkaClients.kafkaInntektsmeldingConsumer)
     val inntekstmeldingService = InntektsmeldingService(
         database = database,
