@@ -9,6 +9,23 @@ import java.sql.Connection
 import java.sql.ResultSet
 import java.sql.Timestamp
 
+fun DatabaseInterface.finnInntektsmelding(id: String): Inntektsmelding? =
+    connection.use {
+        return it.finnInntektsmelding(id)
+    }
+private fun Connection.finnInntektsmelding(id: String): Inntektsmelding? =
+    this.prepareStatement(
+        """
+            SELECT *
+            FROM inntektsmelding
+            WHERE inntektsmeldingId = ?;
+            """
+    ).use {
+        it.setString(1, id)
+        it.executeQuery()
+            .toList { toInntektsmelding() }
+            .firstOrNull()
+    }
 fun DatabaseInterface.finnInntektsmeldinger(fnr: String): List<Inntektsmelding> =
     connection.use {
         return it.finnInntektsmeldinger(fnr)
@@ -18,7 +35,7 @@ private fun Connection.finnInntektsmeldinger(fnr: String): List<Inntektsmelding>
         """
             SELECT *
             FROM inntektsmelding
-            WHERE fnr = ?;
+            WHERE arbeidstakerFnr = ?;
             """
     ).use {
         it.setString(1, fnr)
@@ -84,6 +101,6 @@ private fun Connection.lagreInntektsmelding(inntektsmelding: Inntektsmelding) {
 
         it.executeUpdate()
     }
-
+    // TODO: Hvis kafka konsumeringen tryner så prøver den å legge inn på nytt, sjekk muligheter for rollback
     this.commit()
 }

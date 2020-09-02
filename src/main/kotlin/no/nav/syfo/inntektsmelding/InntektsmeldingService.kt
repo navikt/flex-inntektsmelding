@@ -25,7 +25,7 @@ class InntektsmeldingService(
                 // TODO: Siden mye lages som json, trenger man kanskje ikke å mappe her...
                 val inntektsmelding: Inntektsmelding = objectMapper.readValue(it.value())
                 database.lagreInntektsmelding(inntektsmelding)
-                log.info("Inntektsmelding ${inntektsmelding.inntektsmeldingId} er lagret i databasen")
+                log.info("Lagrer ${inntektsmelding.inntektsmeldingId} i databasen")
             }
         }
         delay(1)
