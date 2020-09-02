@@ -8,7 +8,6 @@ class InntektsmeldingConsumer(
     private val kafkaInntektsmeldingConsumer: KafkaConsumer<String, String>
 ) {
     fun poll(): ConsumerRecords<String, String> {
-        // TODO: Test om denne må senkes
-        return kafkaInntektsmeldingConsumer.poll(Duration.ofMillis(10000))
+        return kafkaInntektsmeldingConsumer.poll(Duration.ofMillis(1000))
     }
 }
