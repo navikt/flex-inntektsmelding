@@ -1,15 +1,8 @@
 package no.nav.syfo
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import io.ktor.application.install
-import io.ktor.features.ContentNegotiation
-import io.ktor.jackson.jackson
-import io.ktor.server.testing.TestApplicationEngine
+import io.ktor.util.* // ktlint-disable no-wildcard-imports
 import io.mockk.* // ktlint-disable no-wildcard-imports
 import kotlinx.coroutines.runBlocking
-import no.nav.inntektsmelding.kontrakt.serde.JacksonJsonConfig
 import no.nav.inntektsmeldingkontrakt.Arbeidsgivertype
 import no.nav.inntektsmeldingkontrakt.Inntektsmelding
 import no.nav.inntektsmeldingkontrakt.Periode
@@ -19,27 +12,58 @@ import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.db.finnInntektsmeldinger
 import no.nav.syfo.inntektsmelding.InntektsmeldingService
 import no.nav.syfo.kafka.InntektsmeldingConsumer
-import no.nav.syfo.kafka.toConsumerConfig
-import no.nav.syfo.kafka.toProducerConfig
+import no.nav.syfo.kafka.util.JacksonKafkaDeserializer
 import no.nav.syfo.testutil.TestDB
+import no.nav.syfo.testutil.stopApplicationNårKafkaTopicErLest
 import org.amshove.kluent.`should be equal to`
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.spekframework.spek2.Spek
-import org.spekframework.spek2.style.specification.xdescribe
+import org.spekframework.spek2.style.specification.describe
 import org.testcontainers.containers.KafkaContainer
-import org.testcontainers.containers.Network
 import java.math.BigDecimal
 import java.time.LocalDate.now
 import java.time.LocalDateTime
 import java.util.* // ktlint-disable no-wildcard-imports
 
+@KtorExperimentalAPI
 object InntektsmeldingSpek : Spek({
-    val env = mockk<Environment>()
+    val env = mockkClass(Environment::class)
+    val database = TestDB()
+
+    every { env.applicationName } returns "application"
+    every { env.inntektsmeldingTopics } returns "topic"
+
+    val kafka = KafkaContainer()
+    kafka.start()
+
+    val kafkaConfig = Properties()
+    kafkaConfig.let {
+        it["bootstrap.servers"] = kafka.bootstrapServers
+        it[ConsumerConfig.GROUP_ID_CONFIG] = "groupId"
+        it[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
+        it[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = JacksonKafkaDeserializer::class.java
+        it[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        it[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        it[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest"
+    }
+
+    val kafkaProducer = KafkaProducer<String, String>(kafkaConfig)
+    val kafkaConsumer = spyk(KafkaConsumer<String, Inntektsmelding>(kafkaConfig))
+    kafkaConsumer.subscribe(listOf(env.inntektsmeldingTopics))
+    val inntektsmeldingConsumer = InntektsmeldingConsumer(kafkaConsumer)
+    val applicationState = ApplicationState(alive = true, ready = true)
+
+    val inntektsmeldingService = InntektsmeldingService(
+        database = database,
+        applicationState = applicationState,
+        inntektsmeldingConsumer = inntektsmeldingConsumer
+    )
     val inntektsmelding = Inntektsmelding(
         inntektsmeldingId = "1",
         status = Status.GYLDIG,
@@ -66,75 +90,32 @@ object InntektsmeldingSpek : Spek({
     )
 
     beforeEachTest {
-        clearAllMocks()
-        every { env.serviceuserUsername } returns "srvflexim"
+        applicationState.ready = true
+        applicationState.alive = true
     }
 
-    // TODO: Finn ut hvorfor denne feiler, trolig noe med EmbeddedPostgres
-    xdescribe("Tester konsumering av inntektsmeldinger") {
-        with(TestApplicationEngine()) {
-            val database = TestDB()
-            val kafka = KafkaContainer().withNetwork(Network.newNetwork())
-            kafka.start()
-            val kafkaConfig = Properties()
-            kafkaConfig.let {
-                it["bootstrap.servers"] = kafka.bootstrapServers
-                it[ConsumerConfig.GROUP_ID_CONFIG] = "groupId"
-                it[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
-                it[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
-                it[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest"
-            }
+    describe("Tester konsumering av inntektsmeldinger") {
+        it("Inntektsmelding mottas fra kafka topic og lagres i db") {
+            val fnr = "12345678901"
+            val ingenInntektsmelding = database.finnInntektsmeldinger(fnr)
+            ingenInntektsmelding.size `should be equal to` 0
 
-            val producerProperties = kafkaConfig.toProducerConfig(groupId = "producer", valueSerializer = StringSerializer::class)
-            val objectMapper = JacksonJsonConfig.objectMapperFactory.opprettObjectMapper()
-            val inntektsmeldingKafkaProducer = KafkaProducer<String, String>(producerProperties)
-
-            val inntektsmeldingProperties = kafkaConfig.toConsumerConfig(groupId = "consumer", valueDeserializer = StringDeserializer::class)
-            val inntektsmeldingKafkaConsumer = spyk(KafkaConsumer<String, String>(inntektsmeldingProperties))
-                .apply { subscribe(listOf("privat-sykepenger-inntektsmelding")) }
-            val inntektsmeldingConsumer = InntektsmeldingConsumer(inntektsmeldingKafkaConsumer)
-
-            val applicationState = ApplicationState().apply {
-                ready = true
-                alive = true
-            }
-            val inntektsmeldingService = InntektsmeldingService(
-                database = database,
-                applicationState = applicationState,
-                inntektsmeldingConsumer = inntektsmeldingConsumer
+            kafkaProducer.send(
+                ProducerRecord(
+                    env.inntektsmeldingTopics,
+                    objectMapper.writeValueAsString(inntektsmelding)
+                )
             )
 
-            val fnr = "12345678901"
-            start()
-            application.install(ContentNegotiation) {
-                jackson {
-                    registerKotlinModule()
-                    registerModule(JavaTimeModule())
-                    configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                }
+            stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
+
+            runBlocking {
+                inntektsmeldingService.start()
             }
 
-            it("Inntektsmelding mottas fra kafka topic og lagres i db") {
-                val ingenInntektsmelding = database.finnInntektsmeldinger(fnr)
-                ingenInntektsmelding.size `should be equal to` 0
-
-                runBlocking {
-                    inntektsmeldingService.start()
-                }
-
-                inntektsmeldingKafkaProducer.send(
-                    ProducerRecord(
-                        "privat-sykepenger-inntektsmelding",
-                        null,
-                        fnr,
-                        objectMapper.writeValueAsString(inntektsmelding),
-                        emptyList()
-                    )
-                )
-
-                val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
-                inntektsmeldinger.size `should be equal to` 1
-            }
+            val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
+            inntektsmeldinger.size `should be equal to` 1
+            inntektsmeldinger[0].arkivreferanse `should be equal to` "999"
         }
     }
 })
