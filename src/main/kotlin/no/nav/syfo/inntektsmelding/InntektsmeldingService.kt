@@ -16,9 +16,14 @@ class InntektsmeldingService(
     private val inntektsmeldingConsumer: InntektsmeldingConsumer
 ) {
     suspend fun start() {
+        log.info("Pre poll")
+        inntektsmeldingConsumer.poll()
+        log.info("Venter på broker")
         delay(30000)
+        log.info("Seek 1 tilbake")
         inntektsmeldingConsumer.startFraForrige()
         while (applicationState.ready) {
+            log.info("App skal være på bena?")
             val consumerRecords = inntektsmeldingConsumer.poll()
             consumerRecords.forEach {
                 val inntektsmelding: Inntektsmelding = it.value()
