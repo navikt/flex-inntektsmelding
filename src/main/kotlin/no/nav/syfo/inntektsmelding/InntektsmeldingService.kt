@@ -15,6 +15,7 @@ class InntektsmeldingService(
     private val inntektsmeldingConsumer: InntektsmeldingConsumer
 ) {
     fun start() {
+        inntektsmeldingConsumer.startFraForrige()
         while (applicationState.ready) {
             val consumerRecords = inntektsmeldingConsumer.poll()
             consumerRecords.forEach {
