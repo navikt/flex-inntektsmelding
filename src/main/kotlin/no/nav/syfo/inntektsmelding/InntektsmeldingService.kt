@@ -1,6 +1,7 @@
 package no.nav.syfo.inntektsmelding
 
 import io.ktor.util.KtorExperimentalAPI
+import kotlinx.coroutines.delay
 import no.nav.inntektsmeldingkontrakt.Inntektsmelding
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.db.DatabaseInterface
@@ -14,7 +15,8 @@ class InntektsmeldingService(
     private val applicationState: ApplicationState,
     private val inntektsmeldingConsumer: InntektsmeldingConsumer
 ) {
-    fun start() {
+    suspend fun start() {
+        delay(30000)
         inntektsmeldingConsumer.startFraForrige()
         while (applicationState.ready) {
             val consumerRecords = inntektsmeldingConsumer.poll()
