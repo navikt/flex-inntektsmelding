@@ -14,6 +14,7 @@ import no.nav.syfo.inntektsmelding.InntektsmeldingService
 import no.nav.syfo.kafka.InntektsmeldingConsumer
 import no.nav.syfo.kafka.util.JacksonKafkaDeserializer
 import no.nav.syfo.testutil.TestDB
+import no.nav.syfo.testutil.stopApplicationNårKafkaTopicErLest
 import org.amshove.kluent.`should be equal to`
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
@@ -33,6 +34,8 @@ import java.util.* // ktlint-disable no-wildcard-imports
 @KtorExperimentalAPI
 object InntektsmeldingSpek : Spek({
     val env = mockkClass(Environment::class)
+    val database = TestDB()
+
     every { env.applicationName } returns "application"
     every { env.inntektsmeldingTopics } returns "topic"
 
@@ -51,12 +54,10 @@ object InntektsmeldingSpek : Spek({
     }
 
     val kafkaProducer = KafkaProducer<String, String>(kafkaConfig)
-    val kafkaConsumer = KafkaConsumer<String, Inntektsmelding>(kafkaConfig)
+    val kafkaConsumer = spyk(KafkaConsumer<String, Inntektsmelding>(kafkaConfig))
     kafkaConsumer.subscribe(listOf(env.inntektsmeldingTopics))
     val inntektsmeldingConsumer = InntektsmeldingConsumer(kafkaConsumer)
     val applicationState = ApplicationState(alive = true, ready = true)
-
-    val database = TestDB()
 
     val inntektsmeldingService = InntektsmeldingService(
         database = database,
@@ -93,11 +94,6 @@ object InntektsmeldingSpek : Spek({
         applicationState.alive = true
     }
 
-    // trenger en funksjon som setter applicationState.ready/alive til false når
-    // vi har lest ei melding på kafka. vanligvis gjøres dette med
-    // every { mockClass.funksjon(any()) } answer { applicationSate.ready = false ... }
-    // men i nåværende arkitektur har vi ikke noe vi *kan* mocke slik :(
-
     describe("Tester konsumering av inntektsmeldinger") {
         it("Inntektsmelding mottas fra kafka topic og lagres i db") {
             val fnr = "12345678901"
@@ -111,12 +107,15 @@ object InntektsmeldingSpek : Spek({
                 )
             )
 
+            stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
+
             runBlocking {
                 inntektsmeldingService.start()
             }
 
             val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
             inntektsmeldinger.size `should be equal to` 1
+            inntektsmeldinger[0].arkivreferanse `should be equal to` "999"
         }
     }
 })
