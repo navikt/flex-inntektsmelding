@@ -34,6 +34,10 @@ val objectMapper: ObjectMapper = ObjectMapper().apply {
 fun main() {
     log.info("Starter flex-inntektsmelding")
     val env = Environment()
+
+    // Sov litt slik at sidecars er klare
+    Thread.sleep(env.sidecarInitialDelay)
+    log.info("Sov i ${env.sidecarInitialDelay} ms i håp om at sidecars er klare")
     val applicationState = ApplicationState()
 
     val database = Database(env)

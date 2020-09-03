@@ -15,7 +15,8 @@ data class Environment(
     val flexInntektsmeldingBackendDbPort: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_PORT"),
     val flexInntektsmeldingBackendDbName: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_DATABASE"),
     val flexInntektsmeldingBackendDbUsername: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_USERNAME"),
-    val flexInntektsmeldingBackendDbPassword: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_PASSWORD")
+    val flexInntektsmeldingBackendDbPassword: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_PASSWORD"),
+    val sidecarInitialDelay: Long = getEnvVar("SIDECAR_INITIAL_DELAY", "15000").toLong()
 ) : KafkaConfig {
 
     fun hentKafkaCredentials(): KafkaCredentials {
