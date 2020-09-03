@@ -11,11 +11,11 @@ data class Environment(
     val inntektsmeldingTopics: String = getEnvVar("INNTEKTSMELDING_TOPICS", "privat-sykepenger-inntektsmelding"),
     val serviceuserUsername: String = getEnvVar("SERVICEUSER_USERNAME"),
     val serviceuserPassword: String = getEnvVar("SERVICEUSER_PASSWORD"),
-    val flexInntektsmeldingBackendDbHost: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_HOST"),
-    val flexInntektsmeldingBackendDbPort: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_PORT"),
-    val flexInntektsmeldingBackendDbName: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_DATABASE"),
-    val flexInntektsmeldingBackendDbUsername: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_USERNAME"),
-    val flexInntektsmeldingBackendDbPassword: String = getEnvVar("NAIS_DATABASE_FLEXINNTEKTSMELDING_INNTEKTSMELDINGDB_PASSWORD"),
+    val flexInntektsmeldingBackendDbHost: String = getEnvVar("DB_HOST"),
+    val flexInntektsmeldingBackendDbPort: String = getEnvVar("DB_PORT"),
+    val flexInntektsmeldingBackendDbName: String = getEnvVar("DB_DATABASE"),
+    val flexInntektsmeldingBackendDbUsername: String = getEnvVar("DB_USERNAME"),
+    val flexInntektsmeldingBackendDbPassword: String = getEnvVar("DB_PASSWORD"),
     val sidecarInitialDelay: Long = getEnvVar("SIDECAR_INITIAL_DELAY", "15000").toLong()
 ) : KafkaConfig {
 
