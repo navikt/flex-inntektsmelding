@@ -15,8 +15,8 @@ class InntektsmeldingConsumer(
     }
 
     fun startFraForrige() {
-        poll()
         val assignments = kafkaInntektsmeldingConsumer.assignment()
+        log.info("Assignments $assignments")
         val offsets = kafkaInntektsmeldingConsumer.endOffsets(assignments)
         log.info("Offsets er $offsets")
         for (tp: TopicPartition in assignments) {
