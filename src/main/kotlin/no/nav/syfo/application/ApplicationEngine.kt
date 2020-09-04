@@ -1,5 +1,6 @@
 package no.nav.syfo.application
 
+import com.auth0.jwk.JwkProvider
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -7,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.application.ApplicationCallPipeline
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.auth.authenticate
 import io.ktor.features.CallId
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.StatusPages
@@ -20,15 +22,21 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.syfo.Environment
+import no.nav.syfo.api.registerInntektsmeldingApi
 import no.nav.syfo.application.api.registerNaisApi
 import no.nav.syfo.application.metrics.monitorHttpRequests
+import no.nav.syfo.inntektsmelding.InntektsmeldingService
 import no.nav.syfo.log
 import java.util.UUID
 
 @KtorExperimentalAPI
 fun createApplicationEngine(
     env: Environment,
-    applicationState: ApplicationState
+    applicationState: ApplicationState,
+    jwkProvider: JwkProvider,
+    issuer: String,
+    loginserviceClientId: String,
+    inntektsmeldingService: InntektsmeldingService
 ): ApplicationEngine =
     embeddedServer(Netty, env.applicationPort) {
         install(ContentNegotiation) {
@@ -39,6 +47,11 @@ fun createApplicationEngine(
                 configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             }
         }
+        setupAuth(
+            loginserviceClientId = loginserviceClientId,
+            jwkProvider = jwkProvider,
+            issuer = issuer
+        )
         install(CallId) {
             generate { UUID.randomUUID().toString() }
             verify { callId: String -> callId.isNotEmpty() }
@@ -53,6 +66,9 @@ fun createApplicationEngine(
 
         routing {
             registerNaisApi(applicationState)
+            authenticate("jwt") {
+                registerInntektsmeldingApi(inntektsmeldingService)
+            }
         }
         intercept(ApplicationCallPipeline.Monitoring, monitorHttpRequests())
     }
