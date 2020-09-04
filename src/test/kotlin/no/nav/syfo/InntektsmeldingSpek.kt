@@ -24,7 +24,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.spekframework.spek2.Spek
-import org.spekframework.spek2.style.specification.xdescribe
+import org.spekframework.spek2.style.specification.describe
 import org.testcontainers.containers.KafkaContainer
 import java.math.BigDecimal
 import java.time.LocalDate.now
@@ -94,7 +94,7 @@ object InntektsmeldingSpek : Spek({
         applicationState.alive = true
     }
 
-    xdescribe("Tester konsumering av inntektsmeldinger") {
+    describe("Tester konsumering av inntektsmeldinger") {
         it("Inntektsmelding mottas fra kafka topic og lagres i db") {
             val fnr = "12345678901"
             val ingenInntektsmelding = database.finnInntektsmeldinger(fnr)
