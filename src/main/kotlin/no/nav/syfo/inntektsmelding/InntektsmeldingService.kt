@@ -22,8 +22,8 @@ class InntektsmeldingService(
         delay(30000)
         log.info("Seek 1 tilbake")
         inntektsmeldingConsumer.startFraForrige()
+        log.info("Nå starter konsumeringen")
         while (applicationState.ready) {
-            log.info("App skal være på bena?")
             val consumerRecords = inntektsmeldingConsumer.poll()
             consumerRecords.forEach {
                 val inntektsmelding: Inntektsmelding = it.value()
