@@ -1,5 +1,6 @@
 package no.nav.syfo.kafka
 
+import kotlinx.coroutines.delay
 import no.nav.inntektsmeldingkontrakt.Inntektsmelding
 import no.nav.syfo.log
 import org.apache.kafka.clients.consumer.ConsumerRecords
@@ -16,11 +17,18 @@ class InntektsmeldingConsumer(
 
     fun startFraForrige() {
         val assignments = kafkaInntektsmeldingConsumer.assignment()
-        log.info("Assignments $assignments")
         val offsets = kafkaInntektsmeldingConsumer.endOffsets(assignments)
-        log.info("Offsets er $offsets")
         for (tp: TopicPartition in assignments) {
             kafkaInntektsmeldingConsumer.seek(tp, offsets[tp]?.minus(1) ?: 0)
         }
+    }
+
+    suspend fun ventTilKlar() {
+        do {
+            delay(1000)
+            val assignments = kafkaInntektsmeldingConsumer.assignment()
+            val offsets = kafkaInntektsmeldingConsumer.endOffsets(assignments)
+            log.info("assignments: $assignments offsets: $offsets")
+        } while (offsets.isEmpty())
     }
 }

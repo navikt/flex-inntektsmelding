@@ -1,7 +1,6 @@
 package no.nav.syfo.inntektsmelding
 
 import io.ktor.util.KtorExperimentalAPI
-import kotlinx.coroutines.delay
 import no.nav.inntektsmeldingkontrakt.Inntektsmelding
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.db.DatabaseInterface
@@ -16,13 +15,9 @@ class InntektsmeldingService(
     private val inntektsmeldingConsumer: InntektsmeldingConsumer
 ) {
     suspend fun start() {
-        log.info("Pre poll")
-        inntektsmeldingConsumer.poll()
-        log.info("Venter på broker")
-        delay(30000)
-        log.info("Seek 1 tilbake")
-        inntektsmeldingConsumer.startFraForrige()
-        log.info("Nå starter konsumeringen")
+        log.info("Venter til consumer er klar")
+        inntektsmeldingConsumer.ventTilKlar()
+        log.info("Nå starter konsumeringen ${applicationState.ready}")
         while (applicationState.ready) {
             val consumerRecords = inntektsmeldingConsumer.poll()
             consumerRecords.forEach {
