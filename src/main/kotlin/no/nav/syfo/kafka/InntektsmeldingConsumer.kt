@@ -26,9 +26,10 @@ class InntektsmeldingConsumer(
     suspend fun ventTilKlar() {
         do {
             delay(1000)
+            val cr = poll()
             val assignments = kafkaInntektsmeldingConsumer.assignment()
             val offsets = kafkaInntektsmeldingConsumer.endOffsets(assignments)
-            log.info("assignments: $assignments offsets: $offsets")
+            log.info("assignments: $assignments offsets: $offsets poll: $cr")
         } while (offsets.isEmpty())
     }
 }
