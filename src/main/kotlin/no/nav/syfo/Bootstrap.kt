@@ -1,5 +1,6 @@
 package no.nav.syfo
 
+import com.auth0.jwk.JwkProviderBuilder
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -14,12 +15,15 @@ import kotlinx.coroutines.launch
 import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.createApplicationEngine
+import no.nav.syfo.application.getWellKnown
 import no.nav.syfo.db.Database
 import no.nav.syfo.inntektsmelding.InntektsmeldingService
 import no.nav.syfo.kafka.InntektsmeldingConsumer
 import no.nav.syfo.kafka.KafkaClients
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.net.URL
+import java.util.concurrent.TimeUnit
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.flex-inntektsmelding")
 
@@ -38,6 +42,14 @@ fun main() {
     // Sov litt slik at sidecars er klare
     Thread.sleep(env.sidecarInitialDelay)
     log.info("Sov i ${env.sidecarInitialDelay} ms i håp om at sidecars er klare")
+
+    val wellKnown = getWellKnown(env.oidcWellKnownUri)
+
+    val jwkProvider = JwkProviderBuilder(URL(wellKnown.jwks_uri))
+        .cached(10, 24, TimeUnit.HOURS)
+        .rateLimited(10, 1, TimeUnit.MINUTES)
+        .build()
+
     val applicationState = ApplicationState()
 
     val database = Database(env)
@@ -53,7 +65,11 @@ fun main() {
 
     val applicationEngine = createApplicationEngine(
         env = env,
-        applicationState = applicationState
+        applicationState = applicationState,
+        jwkProvider = jwkProvider,
+        issuer = wellKnown.issuer,
+        loginserviceClientId = env.loginserviceClientId,
+        inntektsmeldingService = inntekstmeldingService
     )
     val applicationServer = ApplicationServer(applicationEngine, applicationState)
     applicationServer.start()

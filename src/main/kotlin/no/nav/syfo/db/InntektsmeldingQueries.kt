@@ -8,16 +8,18 @@ import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
-fun DatabaseInterface.finnInntektsmelding(id: String): Inntektsmelding? =
+fun DatabaseInterface.finnInntektsmelding(id: String, fnr: String): Inntektsmelding? =
     connection.use { conn ->
         return conn.prepareStatement(
             """
             SELECT *
             FROM inntektsmelding
-            WHERE id = ?;
+            WHERE fnr = ?
+            AND id = ?;
             """
         ).use {
-            it.setString(1, id)
+            it.setString(1, fnr)
+            it.setString(2, id)
             it.executeQuery()
                 .toList { toInntektsmelding() }
                 .firstOrNull()
@@ -56,7 +58,7 @@ fun DatabaseInterface.lagreInntektsmelding(inntektsmelding: Inntektsmelding) {
             it.executeUpdate()
         }
 
-        // TODO: Hvis kafka konsumeringen tryner så prøver den å legge inn på nytt, sjekk muligheter for rollback
+        // TODO: Hvis kafka konsumeringen tryner etter den har lagret så prøver den å legge inn på nytt neste gang, sjekk muligheter for rollback
         conn.commit()
     }
 }
