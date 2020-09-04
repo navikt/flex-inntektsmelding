@@ -18,6 +18,12 @@ import no.nav.syfo.inntektsmelding.InntektsmeldingService
 @KtorExperimentalAPI
 fun Route.registerInntektsmeldingApi(inntektsmeldingService: InntektsmeldingService) {
     route("/api/v1") {
+        get("inntektsmeldinger") {
+            val fnr = call.fnr()
+            val inntektsmeldinger = inntektsmeldingService.finnInntektsmeldinger(fnr)
+            call.respond(inntektsmeldinger.map { it.tilRSInntektsmelding() })
+        }
+
         get("inntektsmelding/{id}") {
             val id = call.parameters["id"]!!
             val fnr = call.fnr()

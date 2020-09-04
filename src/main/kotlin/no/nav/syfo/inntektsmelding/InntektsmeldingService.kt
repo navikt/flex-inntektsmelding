@@ -5,6 +5,7 @@ import no.nav.inntektsmeldingkontrakt.Inntektsmelding
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.db.finnInntektsmelding
+import no.nav.syfo.db.finnInntektsmeldinger
 import no.nav.syfo.db.lagreInntektsmelding
 import no.nav.syfo.kafka.InntektsmeldingConsumer
 import no.nav.syfo.log
@@ -49,4 +50,5 @@ class InntektsmeldingService(
     }
 
     fun finnInntektsmelding(id: String, fnr: String) = database.finnInntektsmelding(id, fnr)
+    fun finnInntektsmeldinger(fnr: String) = database.finnInntektsmeldinger(fnr)
 }
