@@ -58,6 +58,7 @@ fun main() {
 
     val inntektsmeldingConsumer = InntektsmeldingConsumer(kafkaClients.kafkaInntektsmeldingConsumer)
     val inntekstmeldingService = InntektsmeldingService(
+        env = env,
         database = database,
         applicationState = applicationState,
         inntektsmeldingConsumer = inntektsmeldingConsumer
