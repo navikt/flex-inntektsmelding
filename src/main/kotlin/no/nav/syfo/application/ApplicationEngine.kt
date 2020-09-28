@@ -2,9 +2,11 @@ package no.nav.syfo.application
 
 import com.auth0.jwk.JwkProvider
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import io.ktor.application.Application
 import io.ktor.application.ApplicationCallPipeline
 import io.ktor.application.call
 import io.ktor.application.install
@@ -39,36 +41,48 @@ fun createApplicationEngine(
     inntektsmeldingService: InntektsmeldingService
 ): ApplicationEngine =
     embeddedServer(Netty, env.applicationPort) {
-        install(ContentNegotiation) {
-            jackson {
-                registerKotlinModule()
-                registerModule(JavaTimeModule())
-                configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            }
-        }
-        setupAuth(
+        settOppApplication(
             loginserviceClientId = loginserviceClientId,
             jwkProvider = jwkProvider,
-            issuer = issuer
+            issuer = issuer,
+            applicationState = applicationState,
+            inntektsmeldingService = inntektsmeldingService
         )
-        install(CallId) {
-            generate { UUID.randomUUID().toString() }
-            verify { callId: String -> callId.isNotEmpty() }
-            header(HttpHeaders.XCorrelationId)
-        }
-        install(StatusPages) {
-            exception<Throwable> { cause ->
-                log.error("Caught exception ${cause.message}", cause)
-                call.respond(HttpStatusCode.InternalServerError, cause.message ?: "Unknown error")
-            }
-        }
-
-        routing {
-            registerNaisApi(applicationState)
-            authenticate("jwt") {
-                registerInntektsmeldingApi(inntektsmeldingService)
-            }
-        }
-        intercept(ApplicationCallPipeline.Monitoring, monitorHttpRequests())
     }
+
+@KtorExperimentalAPI
+fun Application.settOppApplication(loginserviceClientId: String, jwkProvider: JwkProvider, issuer: String, applicationState: ApplicationState, inntektsmeldingService: InntektsmeldingService) {
+    install(ContentNegotiation) {
+        jackson {
+            registerKotlinModule()
+            registerModule(JavaTimeModule())
+            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+            configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+        }
+    }
+    setupAuth(
+        loginserviceClientId = loginserviceClientId,
+        jwkProvider = jwkProvider,
+        issuer = issuer
+    )
+    install(CallId) {
+        generate { UUID.randomUUID().toString() }
+        verify { callId: String -> callId.isNotEmpty() }
+        header(HttpHeaders.XCorrelationId)
+    }
+    install(StatusPages) {
+        exception<Throwable> { cause ->
+            log.error("Caught exception ${cause.message}", cause)
+            call.respond(HttpStatusCode.InternalServerError, cause.message ?: "Unknown error")
+        }
+    }
+
+    routing {
+        registerNaisApi(applicationState)
+        authenticate("jwt") {
+            registerInntektsmeldingApi(inntektsmeldingService)
+        }
+    }
+    intercept(ApplicationCallPipeline.Monitoring, monitorHttpRequests())
+}

@@ -1,6 +1,8 @@
 package no.nav.syfo.api
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.auth.authentication
@@ -14,6 +16,7 @@ import io.ktor.routing.route
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.inntektsmeldingkontrakt.Inntektsmelding
 import no.nav.syfo.inntektsmelding.InntektsmeldingService
+import java.math.BigDecimal
 
 @KtorExperimentalAPI
 fun Route.registerInntektsmeldingApi(inntektsmeldingService: InntektsmeldingService) {
@@ -24,7 +27,7 @@ fun Route.registerInntektsmeldingApi(inntektsmeldingService: InntektsmeldingServ
             call.respond(inntektsmeldinger.map { it.tilRSInntektsmelding() })
         }
 
-        get("inntektsmelding/{id}") {
+        get("inntektsmeldinger/{id}") {
             val id = call.parameters["id"]!!
             val fnr = call.fnr()
             val inntektsmelding = inntektsmeldingService.finnInntektsmelding(id, fnr)
@@ -57,11 +60,28 @@ fun Melding.tilRespons(httpStatusCode: HttpStatusCode = HttpStatusCode.InternalS
 
 data class RSInntektsmelding(
     val id: String,
-    val fnr: String
-)
+    val fnr: String,
+    @JsonIgnore
+    val beregnetInntekt: BigDecimal?
+
+) {
+    @JsonSerialize
+    fun månedsinntekt(): Int? {
+        return beregnetInntekt?.toInt()
+    }
+
+    @JsonSerialize
+    fun årsinntekt(): Int? {
+        beregnetInntekt?.let {
+            return it.toInt() * 12
+        }
+        return null
+    }
+}
 
 fun Inntektsmelding.tilRSInntektsmelding() =
     RSInntektsmelding(
         id = inntektsmeldingId,
-        fnr = arbeidstakerFnr
+        fnr = arbeidstakerFnr,
+        beregnetInntekt = beregnetInntekt
     )
