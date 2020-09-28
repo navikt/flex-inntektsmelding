@@ -58,7 +58,6 @@ fun DatabaseInterface.lagreInntektsmelding(inntektsmelding: Inntektsmelding) {
             it.executeUpdate()
         }
 
-        // TODO: Hvis kafka konsumeringen tryner etter den har lagret så prøver den å legge inn på nytt neste gang, sjekk muligheter for rollback
         conn.commit()
     }
 }

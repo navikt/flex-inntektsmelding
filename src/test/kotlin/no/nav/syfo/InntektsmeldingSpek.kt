@@ -16,6 +16,7 @@ import no.nav.syfo.kafka.util.JacksonKafkaDeserializer
 import no.nav.syfo.testutil.TestDB
 import no.nav.syfo.testutil.stopApplicationNårKafkaTopicErLest
 import org.amshove.kluent.`should be equal to`
+import org.amshove.kluent.`should not be equal to`
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -60,14 +61,16 @@ object InntektsmeldingSpek : Spek({
     val applicationState = ApplicationState(alive = true, ready = true)
 
     val inntektsmeldingService = InntektsmeldingService(
+        env = env,
         database = database,
         applicationState = applicationState,
         inntektsmeldingConsumer = inntektsmeldingConsumer
     )
+    val fnr = "12345678901"
     val inntektsmelding = Inntektsmelding(
         inntektsmeldingId = "1",
         status = Status.GYLDIG,
-        arbeidstakerFnr = "12345678901",
+        arbeidstakerFnr = fnr,
         arbeidstakerAktorId = "aktorID",
         mottattDato = LocalDateTime.now(),
         arbeidsgivertype = Arbeidsgivertype.PRIVAT,
@@ -96,10 +99,10 @@ object InntektsmeldingSpek : Spek({
 
     describe("Tester konsumering av inntektsmeldinger") {
         it("Inntektsmelding mottas fra kafka topic og lagres i db") {
-            val fnr = "12345678901"
             val ingenInntektsmelding = database.finnInntektsmeldinger(fnr)
             ingenInntektsmelding.size `should be equal to` 0
 
+            every { env.cluster } returns "dev-gcp"
             kafkaProducer.send(
                 ProducerRecord(
                     env.inntektsmeldingTopics,
@@ -108,7 +111,6 @@ object InntektsmeldingSpek : Spek({
             )
 
             stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
-
             runBlocking {
                 inntektsmeldingService.start()
             }
@@ -116,6 +118,44 @@ object InntektsmeldingSpek : Spek({
             val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
             inntektsmeldinger.size `should be equal to` 1
             inntektsmeldinger[0].arkivreferanse `should be equal to` "999"
+        }
+
+        it("Lagrer ikke inntektsmelding i prod-gcp") {
+            every { env.cluster } returns "prod-gcp"
+            kafkaProducer.send(
+                ProducerRecord(
+                    env.inntektsmeldingTopics,
+                    objectMapper.writeValueAsString(inntektsmelding.copy(inntektsmeldingId = "ny"))
+                )
+            )
+
+            stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
+            runBlocking {
+                inntektsmeldingService.start()
+            }
+
+            val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
+            inntektsmeldinger.size `should be equal to` 1
+            inntektsmeldinger[0].inntektsmeldingId `should not be equal to` "ny"
+        }
+
+        it("Håndtering av duplikate inntektsmeldinger") {
+            every { env.cluster } returns "dev-gcp"
+            kafkaProducer.send(
+                ProducerRecord(
+                    env.inntektsmeldingTopics,
+                    objectMapper.writeValueAsString(inntektsmelding.copy(begrunnelseForReduksjonEllerIkkeUtbetalt = "duplikat"))
+                )
+            )
+
+            stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
+            runBlocking {
+                inntektsmeldingService.start()
+            }
+
+            val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
+            inntektsmeldinger.size `should be equal to` 1
+            inntektsmeldinger[0].begrunnelseForReduksjonEllerIkkeUtbetalt?.`should not be equal to`("duplikat")
         }
     }
 })
