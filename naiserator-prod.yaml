@@ -45,7 +45,7 @@ spec:
         - host: login.microsoftonline.com
     inbound:
       rules:
-        - application: flexinntektsmelding-proxy
+        - application: flex-inntektsmelding-proxy
   envFrom:
     - secret: flex-inntektsmelding-serviceuser
   env:
