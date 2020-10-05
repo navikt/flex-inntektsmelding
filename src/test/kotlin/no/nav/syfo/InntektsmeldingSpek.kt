@@ -178,6 +178,24 @@ object InntektsmeldingSpek : Spek({
                 }
             }
 
+            it("Håndtering av duplikate inntektsmeldinger") {
+                every { env.cluster } returns "dev-gcp"
+                kafkaProducer.send(
+                    ProducerRecord(
+                        env.inntektsmeldingTopics,
+                        objectMapper.writeValueAsString(inntektsmelding.copy(begrunnelseForReduksjonEllerIkkeUtbetalt = "duplikat"))
+                    )
+                )
+
+                stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
+                runBlocking {
+                    inntektsmeldingService.start()
+                }
+
+                val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
+                inntektsmeldinger.size `should be equal to` 1
+            }
+
             it("Lagrer ikke inntektsmelding i prod-gcp") {
                 every { env.cluster } returns "prod-gcp"
                 kafkaProducer.send(
@@ -195,24 +213,6 @@ object InntektsmeldingSpek : Spek({
                 val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
                 inntektsmeldinger.size `should be equal to` 1
                 inntektsmeldinger[0].inntektsmeldingId `should not be equal to` "ny"
-            }
-
-            it("Håndtering av duplikate inntektsmeldinger") {
-                every { env.cluster } returns "dev-gcp"
-                kafkaProducer.send(
-                    ProducerRecord(
-                        env.inntektsmeldingTopics,
-                        objectMapper.writeValueAsString(inntektsmelding.copy(arbeidsgiverFnr = "duplikat"))
-                    )
-                )
-
-                stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
-                runBlocking {
-                    inntektsmeldingService.start()
-                }
-
-                val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
-                inntektsmeldinger.size `should be equal to` 1
             }
         }
     }

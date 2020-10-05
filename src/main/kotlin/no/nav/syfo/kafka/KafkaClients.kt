@@ -12,10 +12,10 @@ class KafkaClients(env: Environment) {
 
     private fun getInntektsmeldingConsumer(env: Environment): KafkaConsumer<String, Inntektsmelding> {
         val config = loadBaseConfig(env, env.hentKafkaCredentials()).envOverrides()
-        config["auto.offset.reset"] = "latest"
+        config["auto.offset.reset"] = "latest" // TODO: Sett denne til earliest
 
         val properties = config.toConsumerConfig(
-            groupId = "${env.applicationName}-consumer",
+            groupId = "${env.applicationName}-consumer", // TODO: Endre denne
             keyDeserializer = StringDeserializer::class,
             valueDeserializer = JacksonKafkaDeserializer::class
         )
