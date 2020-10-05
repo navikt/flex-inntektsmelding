@@ -46,6 +46,8 @@ spec:
     inbound:
       rules:
         - application: flex-inntektsmelding-proxy
+        - application: flex-inntektsmelding-mock-proxy # Kun i dev-gcp
+
   envFrom:
     - secret: flex-inntektsmelding-serviceuser
   env:

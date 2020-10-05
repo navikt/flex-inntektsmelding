@@ -70,7 +70,8 @@ fun main() {
         jwkProvider = jwkProvider,
         issuer = wellKnown.issuer,
         loginserviceClientId = env.loginserviceClientId,
-        inntektsmeldingService = inntekstmeldingService
+        inntektsmeldingService = inntekstmeldingService,
+        database = database
     )
     val applicationServer = ApplicationServer(applicationEngine, applicationState)
     applicationServer.start()

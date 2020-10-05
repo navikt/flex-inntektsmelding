@@ -55,6 +55,7 @@ object InntektsmeldingSpek : Spek({
 
     every { env.applicationName } returns "application"
     every { env.inntektsmeldingTopics } returns "topic"
+    every { env.isProd() } returns true
 
     with(TestApplicationEngine()) {
 
@@ -122,7 +123,9 @@ object InntektsmeldingSpek : Spek({
             jwkProvider = jwkProvider,
             issuer = issuer,
             applicationState = applicationState,
-            inntektsmeldingService = inntektsmeldingService
+            inntektsmeldingService = inntektsmeldingService,
+            env = env,
+            database = database
         )
 
         fun TestApplicationRequest.medFnr(subject: String) {

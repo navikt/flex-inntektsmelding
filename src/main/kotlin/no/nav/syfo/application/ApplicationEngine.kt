@@ -25,8 +25,10 @@ import io.ktor.server.netty.Netty
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.syfo.Environment
 import no.nav.syfo.api.registerInntektsmeldingApi
+import no.nav.syfo.api.registerInntektsmeldingMockApi
 import no.nav.syfo.application.api.registerNaisApi
 import no.nav.syfo.application.metrics.monitorHttpRequests
+import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.inntektsmelding.InntektsmeldingService
 import no.nav.syfo.log
 import java.util.UUID
@@ -38,20 +40,31 @@ fun createApplicationEngine(
     jwkProvider: JwkProvider,
     issuer: String,
     loginserviceClientId: String,
-    inntektsmeldingService: InntektsmeldingService
+    inntektsmeldingService: InntektsmeldingService,
+    database: DatabaseInterface
 ): ApplicationEngine =
     embeddedServer(Netty, env.applicationPort) {
         settOppApplication(
+            env = env,
             loginserviceClientId = loginserviceClientId,
             jwkProvider = jwkProvider,
             issuer = issuer,
             applicationState = applicationState,
-            inntektsmeldingService = inntektsmeldingService
+            inntektsmeldingService = inntektsmeldingService,
+            database = database
         )
     }
 
 @KtorExperimentalAPI
-fun Application.settOppApplication(loginserviceClientId: String, jwkProvider: JwkProvider, issuer: String, applicationState: ApplicationState, inntektsmeldingService: InntektsmeldingService) {
+fun Application.settOppApplication(
+    env: Environment,
+    loginserviceClientId: String,
+    jwkProvider: JwkProvider,
+    issuer: String,
+    applicationState: ApplicationState,
+    inntektsmeldingService: InntektsmeldingService,
+    database: DatabaseInterface
+) {
     install(ContentNegotiation) {
         jackson {
             registerKotlinModule()
@@ -82,6 +95,12 @@ fun Application.settOppApplication(loginserviceClientId: String, jwkProvider: Jw
         registerNaisApi(applicationState)
         authenticate("jwt") {
             registerInntektsmeldingApi(inntektsmeldingService)
+        }
+        if (!env.isProd()) {
+            registerInntektsmeldingMockApi(
+                database = database,
+                env = env
+            )
         }
     }
     intercept(ApplicationCallPipeline.Monitoring, monitorHttpRequests())
