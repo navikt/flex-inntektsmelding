@@ -18,7 +18,8 @@ data class Environment(
     val flexInntektsmeldingBackendDbPassword: String = getEnvVar("NAIS_DATABASE_FLEX_INNTEKTSMELDING_INNTEKTSMELDINGDB_PASSWORD"),
     val sidecarInitialDelay: Long = getEnvVar("SIDECAR_INITIAL_DELAY", "15000").toLong(),
     val oidcWellKnownUri: String = getEnvVar("OIDC_WELLKNOWN_URI"),
-    val loginserviceClientId: String = getEnvVar("LOGINSERVICE_CLIENTID")
+    val loginserviceClientId: String = getEnvVar("LOGINSERVICE_CLIENTID"),
+    val electorPath: String = getEnvVar("ELECTOR_PATH")
 ) : KafkaConfig {
 
     fun hentKafkaCredentials(): KafkaCredentials {

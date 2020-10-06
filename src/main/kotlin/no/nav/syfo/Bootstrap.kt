@@ -18,8 +18,10 @@ import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.application.getWellKnown
 import no.nav.syfo.db.Database
 import no.nav.syfo.inntektsmelding.InntektsmeldingService
+import no.nav.syfo.inntektsmelding.cronjob.settOppInntektsmeldingCronjob
 import no.nav.syfo.kafka.InntektsmeldingConsumer
 import no.nav.syfo.kafka.KafkaClients
+import no.nav.syfo.util.PodLeaderCoordinator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URL
@@ -40,8 +42,8 @@ fun main() {
     val env = Environment()
 
     // Sov litt slik at sidecars er klare
+    log.info("Sover i ${env.sidecarInitialDelay} ms i håp om at sidecars er klare")
     Thread.sleep(env.sidecarInitialDelay)
-    log.info("Sov i ${env.sidecarInitialDelay} ms i håp om at sidecars er klare")
 
     val wellKnown = getWellKnown(env.oidcWellKnownUri)
 
@@ -76,10 +78,18 @@ fun main() {
     val applicationServer = ApplicationServer(applicationEngine, applicationState)
     applicationServer.start()
     applicationState.ready = true
-    log.info("Application server stated")
+    log.info("Application server started")
+
     createListener(applicationState) {
         inntekstmeldingService.start()
     }
+
+    val podLeaderCoordinator = PodLeaderCoordinator(env = env)
+    settOppInntektsmeldingCronjob(
+        podLeaderCoordinator = podLeaderCoordinator,
+        database = database,
+        env = env
+    )
 }
 
 fun createListener(applicationState: ApplicationState, action: suspend CoroutineScope.() -> Unit): Job =
