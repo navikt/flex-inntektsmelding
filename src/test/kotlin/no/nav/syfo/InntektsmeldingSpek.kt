@@ -12,11 +12,7 @@ import io.mockk.every
 import io.mockk.mockkClass
 import io.mockk.spyk
 import kotlinx.coroutines.runBlocking
-import no.nav.inntektsmeldingkontrakt.Arbeidsgivertype
 import no.nav.inntektsmeldingkontrakt.Inntektsmelding
-import no.nav.inntektsmeldingkontrakt.Periode
-import no.nav.inntektsmeldingkontrakt.Refusjon
-import no.nav.inntektsmeldingkontrakt.Status
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.settOppApplication
 import no.nav.syfo.db.finnInntektsmeldinger
@@ -25,6 +21,7 @@ import no.nav.syfo.kafka.InntektsmeldingConsumer
 import no.nav.syfo.kafka.util.JacksonKafkaDeserializer
 import no.nav.syfo.testutil.TestDB
 import no.nav.syfo.testutil.generateJWT
+import no.nav.syfo.testutil.settOppInntektsmelding
 import no.nav.syfo.testutil.stopApplicationNårKafkaTopicErLest
 import org.amshove.kluent.`should be equal to`
 import org.amshove.kluent.`should not be equal to`
@@ -39,10 +36,7 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 import org.testcontainers.containers.KafkaContainer
-import java.math.BigDecimal
 import java.nio.file.Paths
-import java.time.LocalDate.now
-import java.time.LocalDateTime
 import java.util.Properties
 
 @KtorExperimentalAPI
@@ -86,31 +80,7 @@ object InntektsmeldingSpek : Spek({
             inntektsmeldingConsumer = inntektsmeldingConsumer
         )
         val fnr = "12345678901"
-        val inntektsmelding = Inntektsmelding(
-            inntektsmeldingId = "1",
-            status = Status.GYLDIG,
-            beregnetInntekt = BigDecimal(50000),
-            arbeidstakerFnr = fnr,
-            arbeidstakerAktorId = "aktorID",
-            mottattDato = LocalDateTime.now(),
-            arbeidsgivertype = Arbeidsgivertype.PRIVAT,
-            foersteFravaersdag = now().minusDays(10),
-            arbeidsgiverperioder = listOf(
-                Periode(
-                    fom = now().minusDays(10),
-                    tom = now()
-                )
-            ),
-            arkivreferanse = "999",
-            refusjon = Refusjon(
-                beloepPrMnd = BigDecimal(1000),
-                opphoersdato = now()
-            ),
-            endringIRefusjoner = emptyList(),
-            ferieperioder = emptyList(),
-            gjenopptakelseNaturalytelser = emptyList(),
-            opphoerAvNaturalytelser = emptyList()
-        )
+        val inntektsmelding = settOppInntektsmelding(fnr)
 
         val path = "src/test/resources/jwkset.json"
         val uri = Paths.get(path).toUri().toURL()
