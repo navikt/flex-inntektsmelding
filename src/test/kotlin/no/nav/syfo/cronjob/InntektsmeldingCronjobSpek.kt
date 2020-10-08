@@ -6,6 +6,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import no.nav.syfo.db.finnInntektsmeldinger
 import no.nav.syfo.db.lagreInntektsmelding
+import no.nav.syfo.domene.tilEnkelInntektsmelding
 import no.nav.syfo.inntektsmelding.cronjob.inntektsmeldingCronjob
 import no.nav.syfo.testutil.TestDB
 import no.nav.syfo.testutil.settOppInntektsmelding
@@ -37,7 +38,7 @@ object InntektsmeldingCronjobSpek : Spek({
             every {
                 Instant.now()
             } returns grunntid.toInstant()
-            testDb.lagreInntektsmelding(inntektsmelding)
+            testDb.lagreInntektsmelding(inntektsmelding.tilEnkelInntektsmelding())
             testDb.finnInntektsmeldinger(fnr = fnr).size `should be equal to` 1
         }
 
@@ -69,7 +70,7 @@ object InntektsmeldingCronjobSpek : Spek({
             every {
                 Instant.now()
             } returns grunntid.minusYears(2).toInstant()
-            testDb.lagreInntektsmelding(inntektsmeldingSomSkalSlettes)
+            testDb.lagreInntektsmelding(inntektsmeldingSomSkalSlettes.tilEnkelInntektsmelding())
             testDb.finnInntektsmeldinger(fnr = fnr).size `should be equal to` 2
         }
 

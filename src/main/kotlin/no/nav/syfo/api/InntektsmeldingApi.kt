@@ -14,7 +14,7 @@ import io.ktor.routing.Route
 import io.ktor.routing.get
 import io.ktor.routing.route
 import io.ktor.util.KtorExperimentalAPI
-import no.nav.inntektsmeldingkontrakt.Inntektsmelding
+import no.nav.syfo.domene.EnkelInntektsmelding
 import no.nav.syfo.inntektsmelding.InntektsmeldingService
 import java.math.BigDecimal
 
@@ -79,7 +79,7 @@ data class RSInntektsmelding(
     }
 }
 
-fun Inntektsmelding.tilRSInntektsmelding() =
+fun EnkelInntektsmelding.tilRSInntektsmelding() =
     RSInntektsmelding(
         id = inntektsmeldingId,
         fnr = arbeidstakerFnr,

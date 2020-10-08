@@ -8,6 +8,7 @@ import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.db.finnInntektsmelding
 import no.nav.syfo.db.finnInntektsmeldinger
 import no.nav.syfo.db.lagreInntektsmelding
+import no.nav.syfo.domene.tilEnkelInntektsmelding
 import no.nav.syfo.kafka.InntektsmeldingConsumer
 import no.nav.syfo.log
 import no.nav.syfo.metrikk.MOTTATT_INNTEKTSMELDING
@@ -60,7 +61,7 @@ class InntektsmeldingService(
 
     private fun lagreInntektsmelding(inntektsmelding: Inntektsmelding) {
         try {
-            database.lagreInntektsmelding(inntektsmelding)
+            database.lagreInntektsmelding(inntektsmelding.tilEnkelInntektsmelding())
             log.info("Lagrer ${inntektsmelding.inntektsmeldingId} i databasen")
         } catch (e: PSQLException) {
             if (e.message?.contains("ERROR: duplicate key value violates unique constraint") == true) {
