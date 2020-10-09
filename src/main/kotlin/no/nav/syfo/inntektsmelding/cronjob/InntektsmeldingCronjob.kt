@@ -21,7 +21,7 @@ fun inntektsmeldingCronjob(
 
     log.info("Kjører inntektsmelding cronjob")
 
-    val inntektsmeldingerSomSkalSlettes = database.finnInntektsmeldingerEldreEnn18Mnd() // TODO: Har vi lov å beholde disse så lenge?
+    val inntektsmeldingerSomSkalSlettes = database.finnInntektsmeldingerEldreEnn18Mnd()
 
     inntektsmeldingerSomSkalSlettes.forEach { inntektsmelding ->
         database.slettInntektsmelding(inntektsmelding.inntektsmeldingId)
