@@ -15,6 +15,7 @@ import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.db.finnInntektsmeldinger
 import no.nav.syfo.db.lagreInntektsmelding
 import no.nav.syfo.db.slettInntektsmelding
+import no.nav.syfo.domene.tilEnkelInntektsmelding
 
 @KtorExperimentalAPI
 fun Route.registerInntektsmeldingMockApi(database: DatabaseInterface, env: Environment) {
@@ -26,7 +27,7 @@ fun Route.registerInntektsmeldingMockApi(database: DatabaseInterface, env: Envir
 
             val inntektsmelding = call.receive<Inntektsmelding>()
 
-            database.lagreInntektsmelding(inntektsmelding)
+            database.lagreInntektsmelding(inntektsmelding.tilEnkelInntektsmelding())
 
             call.respond(Melding("Inntektsmelding med id ${inntektsmelding.inntektsmeldingId} opprettet").tilRespons(HttpStatusCode.Created))
         }

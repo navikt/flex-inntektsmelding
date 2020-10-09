@@ -1,7 +1,7 @@
 package no.nav.syfo.db
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import no.nav.inntektsmeldingkontrakt.Inntektsmelding
+import no.nav.syfo.domene.EnkelInntektsmelding
 import no.nav.syfo.objectMapper
 import org.postgresql.util.PGobject
 import java.sql.ResultSet
@@ -9,7 +9,7 @@ import java.sql.Timestamp
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-fun DatabaseInterface.finnInntektsmelding(id: String, fnr: String): Inntektsmelding? =
+fun DatabaseInterface.finnInntektsmelding(id: String, fnr: String): EnkelInntektsmelding? =
     connection.use { conn ->
         return conn.prepareStatement(
             """
@@ -27,7 +27,7 @@ fun DatabaseInterface.finnInntektsmelding(id: String, fnr: String): Inntektsmeld
         }
     }
 
-fun DatabaseInterface.finnInntektsmeldinger(fnr: String): List<Inntektsmelding> =
+fun DatabaseInterface.finnInntektsmeldinger(fnr: String): List<EnkelInntektsmelding> =
     connection.use { conn ->
         return conn.prepareStatement(
             """
@@ -41,7 +41,7 @@ fun DatabaseInterface.finnInntektsmeldinger(fnr: String): List<Inntektsmelding> 
         }
     }
 
-fun DatabaseInterface.lagreInntektsmelding(inntektsmelding: Inntektsmelding) {
+fun DatabaseInterface.lagreInntektsmelding(inntektsmelding: EnkelInntektsmelding) {
     connection.use { conn ->
         conn.prepareStatement(
             """
@@ -60,7 +60,7 @@ fun DatabaseInterface.lagreInntektsmelding(inntektsmelding: Inntektsmelding) {
     }
 }
 
-fun DatabaseInterface.finnInntektsmeldingerEldreEnn18Mnd(): List<Inntektsmelding> =
+fun DatabaseInterface.finnInntektsmeldingerEldreEnn18Mnd(): List<EnkelInntektsmelding> =
     connection.use { conn ->
         return conn.prepareStatement(
             """
@@ -89,5 +89,5 @@ fun DatabaseInterface.slettInntektsmelding(id: String) {
     }
 }
 
-private fun ResultSet.toInntektsmelding(): Inntektsmelding =
+private fun ResultSet.toInntektsmelding(): EnkelInntektsmelding =
     objectMapper.readValue(getString("inntektsmelding"))

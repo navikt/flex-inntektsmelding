@@ -131,7 +131,7 @@ object InntektsmeldingSpek : Spek({
 
                 val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
                 inntektsmeldinger.size `should be equal to` 1
-                inntektsmeldinger[0].arkivreferanse `should be equal to` "999"
+                inntektsmeldinger[0].inntektsmeldingId `should be equal to` "1"
             }
 
             it("Inntektsmeldinger kan hentes fra APIet") {
@@ -202,7 +202,7 @@ object InntektsmeldingSpek : Spek({
                 kafkaProducer.send(
                     ProducerRecord(
                         env.inntektsmeldingTopics,
-                        objectMapper.writeValueAsString(inntektsmelding.copy(begrunnelseForReduksjonEllerIkkeUtbetalt = "duplikat"))
+                        objectMapper.writeValueAsString(inntektsmelding.copy(arbeidsgiverFnr = "duplikat"))
                     )
                 )
 
@@ -213,7 +213,7 @@ object InntektsmeldingSpek : Spek({
 
                 val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
                 inntektsmeldinger.size `should be equal to` 1
-                inntektsmeldinger[0].begrunnelseForReduksjonEllerIkkeUtbetalt?.`should not be equal to`("duplikat")
+                inntektsmeldinger[0].arbeidsgiverFnr?.`should not be equal to`("duplikat")
             }
         }
     }
