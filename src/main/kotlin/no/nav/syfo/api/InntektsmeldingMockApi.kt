@@ -14,7 +14,7 @@ import no.nav.syfo.Environment
 import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.db.finnInntektsmeldinger
 import no.nav.syfo.db.lagreInntektsmelding
-import no.nav.syfo.log
+import no.nav.syfo.db.slettInntektsmelding
 
 @KtorExperimentalAPI
 fun Route.registerInntektsmeldingMockApi(database: DatabaseInterface, env: Environment) {
@@ -38,28 +38,10 @@ fun Route.registerInntektsmeldingMockApi(database: DatabaseInterface, env: Envir
             val fnr = call.parameters["fnr"]!!
             val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
             inntektsmeldinger.forEach {
-                database.slettInntektsmeldinger(it.inntektsmeldingId)
+                database.slettInntektsmelding(it.inntektsmeldingId)
             }
 
             call.respond(Melding("Slettet ${inntektsmeldinger.size} inntektsmeldinger").tilRespons(HttpStatusCode.OK))
         }
-    }
-}
-
-private fun DatabaseInterface.slettInntektsmeldinger(id: String) {
-    connection.use { connection ->
-        log.info("Sletter inntektsmelding med id $id")
-        connection.prepareStatement(
-            """
-                DELETE FROM inntektsmelding
-                WHERE id = ?;
-            """
-        ).use {
-            it.setString(1, id)
-            it.execute()
-        }
-        connection.commit()
-
-        log.info("Utført: slettet inntektsmelding med id $id")
     }
 }
