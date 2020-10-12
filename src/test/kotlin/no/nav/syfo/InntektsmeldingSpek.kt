@@ -142,7 +142,7 @@ object InntektsmeldingSpek : Spek({
                     }
                 ) {
                     response.status() shouldEqual HttpStatusCode.OK
-                    response.content shouldEqual "[{\"fnr\":\"12345678901\",\"id\":\"1\",\"månedsinntekt\":50000,\"årsinntekt\":600000}]"
+                    response.content shouldEqual "[{\"id\":\"1\",\"månedsinntekt\":50000,\"årsinntekt\":600000}]"
                 }
             }
 
@@ -154,7 +154,7 @@ object InntektsmeldingSpek : Spek({
                     }
                 ) {
                     response.status() shouldEqual HttpStatusCode.OK
-                    response.content shouldEqual "{\"fnr\":\"12345678901\",\"id\":\"1\",\"månedsinntekt\":50000,\"årsinntekt\":600000}"
+                    response.content shouldEqual "{\"id\":\"1\",\"månedsinntekt\":50000,\"årsinntekt\":600000}"
                 }
             }
 
@@ -213,7 +213,6 @@ object InntektsmeldingSpek : Spek({
 
                 val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
                 inntektsmeldinger.size `should be equal to` 1
-                inntektsmeldinger[0].arbeidsgiverFnr?.`should not be equal to`("duplikat")
             }
         }
     }

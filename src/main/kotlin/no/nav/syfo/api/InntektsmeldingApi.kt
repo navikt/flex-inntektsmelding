@@ -60,7 +60,6 @@ fun Melding.tilRespons(httpStatusCode: HttpStatusCode = HttpStatusCode.InternalS
 
 data class RSInntektsmelding(
     val id: String,
-    val fnr: String,
     @JsonIgnore
     val beregnetInntekt: BigDecimal?
 
@@ -82,6 +81,5 @@ data class RSInntektsmelding(
 fun EnkelInntektsmelding.tilRSInntektsmelding() =
     RSInntektsmelding(
         id = inntektsmeldingId,
-        fnr = arbeidstakerFnr,
         beregnetInntekt = beregnetInntekt
     )
