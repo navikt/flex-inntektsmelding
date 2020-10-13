@@ -1,8 +1,8 @@
 package no.nav.syfo.inntektsmelding
 
 import io.ktor.util.KtorExperimentalAPI
+import kotlinx.coroutines.delay
 import no.nav.inntektsmeldingkontrakt.Inntektsmelding
-import no.nav.syfo.Environment
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.db.finnInntektsmelding
@@ -12,48 +12,45 @@ import no.nav.syfo.domene.tilEnkelInntektsmelding
 import no.nav.syfo.kafka.InntektsmeldingConsumer
 import no.nav.syfo.log
 import no.nav.syfo.metrikk.MOTTATT_INNTEKTSMELDING
-import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.postgresql.util.PSQLException
+import java.lang.Exception
 
 @KtorExperimentalAPI
 class InntektsmeldingService(
-    private val env: Environment,
     private val database: DatabaseInterface,
     private val applicationState: ApplicationState,
-    private val inntektsmeldingConsumer: InntektsmeldingConsumer
+    private val inntektsmeldingConsumer: InntektsmeldingConsumer,
+    private val delayStart: Long = 10_000L
 ) {
-    fun start() {
+    suspend fun start() {
+        while (applicationState.alive) {
+            try {
+                run()
+            } catch (ex: Exception) {
+                log.error("Feil ved konsumering fra kafka, restarter om $delayStart ms", ex)
+                inntektsmeldingConsumer.unsubscribe()
+            }
+            delay(delayStart)
+        }
+    }
+
+    private fun run() {
         log.info("Starter InntektsmeldingService")
+        inntektsmeldingConsumer.subscribe()
 
-        val cr = ventTilKlar()
-
-        log.info("Inntektsmelding consumer er klar")
-
-        listen(cr)
-
-        log.info("Avslutter InntektsmeldingService")
-    }
-
-    private fun ventTilKlar(): ConsumerRecords<String, Inntektsmelding> {
-        var cr: ConsumerRecords<String, Inntektsmelding>
-        do {
-            cr = inntektsmeldingConsumer.poll()
-        } while (!inntektsmeldingConsumer.erKlar() && applicationState.ready)
-        return cr
-    }
-
-    private fun listen(cr: ConsumerRecords<String, Inntektsmelding>) {
-        var consumerRecords = cr
-        do {
-            consumerRecords.forEach {
+        while (applicationState.ready) {
+            val cr = inntektsmeldingConsumer.poll()
+            cr.forEach {
                 val inntektsmelding: Inntektsmelding = it.value()
 
                 lagreInntektsmelding(inntektsmelding)
 
                 MOTTATT_INNTEKTSMELDING.inc()
             }
-            consumerRecords = inntektsmeldingConsumer.poll()
-        } while (applicationState.ready)
+            if (!cr.isEmpty) {
+                inntektsmeldingConsumer.commitSync()
+            }
+        }
     }
 
     private fun lagreInntektsmelding(inntektsmelding: Inntektsmelding) {

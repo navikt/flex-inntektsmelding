@@ -21,9 +21,6 @@ class KafkaClients(env: Environment) {
         )
         properties.let { it[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = "1" }
 
-        val consumer = KafkaConsumer<String, Inntektsmelding>(properties)
-        consumer.subscribe(listOf(env.inntektsmeldingTopics))
-
-        return consumer
+        return KafkaConsumer(properties)
     }
 }
