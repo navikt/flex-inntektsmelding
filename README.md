@@ -7,6 +7,7 @@ Inntektsmeldinger skal vises som en del av innsynsløsningen for utbetaling av s
 
 Test: `./gradlew test`  
 Lint: `./gradlew ktlintCheck`  
+Lint fix: `./gradlew ktlintFormat`  
 Docker-compose: `./buildlatest.sh`
 
 ### Henvendelser
