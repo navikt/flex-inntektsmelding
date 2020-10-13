@@ -8,9 +8,12 @@ import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.TestApplicationRequest
 import io.ktor.server.testing.handleRequest
 import io.ktor.util.KtorExperimentalAPI
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockkClass
 import io.mockk.spyk
+import io.mockk.verify
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import no.nav.inntektsmeldingkontrakt.Inntektsmelding
 import no.nav.syfo.application.ApplicationState
@@ -22,7 +25,8 @@ import no.nav.syfo.kafka.util.JacksonKafkaDeserializer
 import no.nav.syfo.testutil.TestDB
 import no.nav.syfo.testutil.generateJWT
 import no.nav.syfo.testutil.settOppInntektsmelding
-import no.nav.syfo.testutil.stopApplicationNårKafkaTopicErLest
+import no.nav.syfo.testutil.stopApplicationNårAntallKafkaMeldingerErLest
+import no.nav.syfo.testutil.stopApplicationNårAntallKafkaPollErGjort
 import org.amshove.kluent.`should be equal to`
 import org.amshove.kluent.shouldEqual
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -36,6 +40,7 @@ import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 import org.testcontainers.containers.KafkaContainer
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.Properties
 
 @KtorExperimentalAPI
@@ -68,15 +73,17 @@ object InntektsmeldingSpek : Spek({
 
         val kafkaProducer = KafkaProducer<String, String>(kafkaConfig)
         val kafkaConsumer = spyk(KafkaConsumer<String, Inntektsmelding>(kafkaConfig))
-        kafkaConsumer.subscribe(listOf(env.inntektsmeldingTopics))
-        val inntektsmeldingConsumer = InntektsmeldingConsumer(kafkaConsumer)
+        val inntektsmeldingConsumer = InntektsmeldingConsumer(
+            kafkaConsumer,
+            listOf(env.inntektsmeldingTopics)
+        )
         val applicationState = ApplicationState(alive = true, ready = true)
 
         val inntektsmeldingService = InntektsmeldingService(
-            env = env,
             database = database,
             applicationState = applicationState,
-            inntektsmeldingConsumer = inntektsmeldingConsumer
+            inntektsmeldingConsumer = inntektsmeldingConsumer,
+            delayStart = 100L
         )
         val fnr = "12345678901"
         val inntektsmelding = settOppInntektsmelding(fnr)
@@ -104,7 +111,15 @@ object InntektsmeldingSpek : Spek({
             )
         }
 
+        fun setupEnvMock() {
+            clearAllMocks()
+            every { env.applicationName } returns "application"
+            every { env.inntektsmeldingTopics } returns "topic"
+            every { env.isProd() } returns true
+        }
+
         beforeEachTest {
+            setupEnvMock()
             applicationState.ready = true
             applicationState.alive = true
         }
@@ -122,11 +137,12 @@ object InntektsmeldingSpek : Spek({
                     producerRecord
                 )
 
-                stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
+                stopApplicationNårAntallKafkaMeldingerErLest(kafkaConsumer, applicationState, 1)
                 runBlocking {
                     inntektsmeldingService.start()
                 }
 
+                verify(exactly = 1) { kafkaConsumer.commitSync() }
                 val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
                 inntektsmeldinger.size `should be equal to` 1
                 inntektsmeldinger[0].inntektsmeldingId `should be equal to` "1"
@@ -184,13 +200,26 @@ object InntektsmeldingSpek : Spek({
                     )
                 )
 
-                stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
+                stopApplicationNårAntallKafkaMeldingerErLest(kafkaConsumer, applicationState, 1)
                 runBlocking {
                     inntektsmeldingService.start()
                 }
 
+                verify(exactly = 1) { kafkaConsumer.commitSync() }
                 val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
                 inntektsmeldinger.size `should be equal to` 1
+            }
+
+            it("Consumer poll kan returnere tom liste") {
+                stopApplicationNårAntallKafkaPollErGjort(kafkaConsumer, applicationState, antallKafkaPoll = 2)
+                val co = launch {
+                    inntektsmeldingService.start()
+                }
+                runBlocking {
+                    co.join()
+                    verify(exactly = 2) { kafkaConsumer.poll(any<Duration>()) }
+                    verify(exactly = 0) { kafkaConsumer.commitSync() }
+                }
             }
         }
     }
