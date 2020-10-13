@@ -12,7 +12,7 @@ class KafkaClients(env: Environment) {
 
     private fun getInntektsmeldingConsumer(env: Environment): KafkaConsumer<String, Inntektsmelding> {
         val config = loadBaseConfig(env, env.hentKafkaCredentials()).envOverrides()
-        config["auto.offset.reset"] = "earliest" // TODO: Sett denne til latest etter prodsetting
+        config["auto.offset.reset"] = "latest"
 
         val properties = config.toConsumerConfig(
             groupId = "flex-inntektsmelding-consumer-v2",
