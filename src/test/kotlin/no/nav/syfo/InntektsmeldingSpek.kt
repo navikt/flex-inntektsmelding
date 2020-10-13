@@ -24,7 +24,6 @@ import no.nav.syfo.testutil.generateJWT
 import no.nav.syfo.testutil.settOppInntektsmelding
 import no.nav.syfo.testutil.stopApplicationNårKafkaTopicErLest
 import org.amshove.kluent.`should be equal to`
-import org.amshove.kluent.`should not be equal to`
 import org.amshove.kluent.shouldEqual
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
@@ -115,7 +114,6 @@ object InntektsmeldingSpek : Spek({
                 val ingenInntektsmelding = database.finnInntektsmeldinger(fnr)
                 ingenInntektsmelding.size `should be equal to` 0
 
-                every { env.cluster } returns "dev-gcp"
                 val producerRecord = ProducerRecord<String, String>(
                     env.inntektsmeldingTopics,
                     objectMapper.writeValueAsString(inntektsmelding)
@@ -179,7 +177,6 @@ object InntektsmeldingSpek : Spek({
             }
 
             it("Håndtering av duplikate inntektsmeldinger") {
-                every { env.cluster } returns "dev-gcp"
                 kafkaProducer.send(
                     ProducerRecord(
                         env.inntektsmeldingTopics,
@@ -194,25 +191,6 @@ object InntektsmeldingSpek : Spek({
 
                 val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
                 inntektsmeldinger.size `should be equal to` 1
-            }
-
-            it("Lagrer ikke inntektsmelding i prod-gcp") {
-                every { env.cluster } returns "prod-gcp"
-                kafkaProducer.send(
-                    ProducerRecord(
-                        env.inntektsmeldingTopics,
-                        objectMapper.writeValueAsString(inntektsmelding.copy(inntektsmeldingId = "ny"))
-                    )
-                )
-
-                stopApplicationNårKafkaTopicErLest(kafkaConsumer, applicationState)
-                runBlocking {
-                    inntektsmeldingService.start()
-                }
-
-                val inntektsmeldinger = database.finnInntektsmeldinger(fnr)
-                inntektsmeldinger.size `should be equal to` 1
-                inntektsmeldinger[0].inntektsmeldingId `should not be equal to` "ny"
             }
         }
     }

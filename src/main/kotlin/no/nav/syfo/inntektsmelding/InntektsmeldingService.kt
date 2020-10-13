@@ -48,11 +48,8 @@ class InntektsmeldingService(
             consumerRecords.forEach {
                 val inntektsmelding: Inntektsmelding = it.value()
 
-                if (env.cluster == "prod-gcp") {
-                    log.info("Her ville ${inntektsmelding.inntektsmeldingId} blitt lagret i databasen")
-                } else {
-                    lagreInntektsmelding(inntektsmelding)
-                }
+                lagreInntektsmelding(inntektsmelding)
+
                 MOTTATT_INNTEKTSMELDING.inc()
             }
             consumerRecords = inntektsmeldingConsumer.poll()
