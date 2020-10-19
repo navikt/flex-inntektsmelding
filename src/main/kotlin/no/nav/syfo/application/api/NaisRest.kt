@@ -11,6 +11,7 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.common.TextFormat
 import io.prometheus.client.exporter.common.TextFormat.write004
 import no.nav.syfo.application.ApplicationState
+import no.nav.syfo.log
 
 fun Routing.registerNaisApi(
     applicationState: ApplicationState,
@@ -33,7 +34,9 @@ fun Routing.registerNaisApi(
         }
     }
     get("/prometheus") {
+        log.info("Parameters: ${call.request.queryParameters.names()}")
         val names = call.request.queryParameters.getAll("name[]")?.toSet() ?: setOf()
+        log.info("Names: $names")
         call.respondTextWriter(ContentType.parse(TextFormat.CONTENT_TYPE_004)) {
             write004(this, collectorRegistry.filteredMetricFamilySamples(names))
         }
