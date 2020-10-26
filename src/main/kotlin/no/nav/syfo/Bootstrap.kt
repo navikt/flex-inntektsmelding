@@ -45,7 +45,7 @@ fun main() {
     log.info("Sover i ${env.sidecarInitialDelay} ms i håp om at sidecars er klare")
     Thread.sleep(env.sidecarInitialDelay)
 
-    val wellKnown = getWellKnown(env.oidcWellKnownUri)
+    val wellKnown = getWellKnown(env.loginserviceIdportenDiscoveryUrl)
 
     val jwkProvider = JwkProviderBuilder(URL(wellKnown.jwks_uri))
         .cached(10, 24, TimeUnit.HOURS)
@@ -73,7 +73,7 @@ fun main() {
         applicationState = applicationState,
         jwkProvider = jwkProvider,
         issuer = wellKnown.issuer,
-        loginserviceClientId = env.loginserviceClientId,
+        loginserviceClientId = env.loginserviceIdportenAudience,
         inntektsmeldingService = inntekstmeldingService,
         database = database
     )
